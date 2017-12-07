@@ -102,6 +102,14 @@ module.exports = function (options, context, rs, logger) {
         }
     };
 
+    // TODO: refactor. most initialization shoyld be done in module constructor
+    module._iterationStart = function(vars) {
+        if (!this.isInitialized && opts.autoResume) {
+            module.init(null, null, null, true);
+        }
+    };
+    
+
     // TODO: _assert* should be extracted into a separate helper later on
     helpers._assertLocator = function(locator) {
         if (!locator) {
@@ -147,7 +155,7 @@ module.exports = function (options, context, rs, logger) {
      * @param {String=} host - Appium server host name or Selenium Grid full URL (default: localhost).
      * @param {Number=} port - Appium server port (default: 4723). If full URL is specified in the host parameter, port parameter must not be specified.
      */
-    module.init = function(caps, host, port) {
+    module.init = function(caps, host, port, resume) {
         // ignore init if the module has been already initialized
         // this is required when test suite with multiple test cases is executed
         // then .init() might be called in each test case, but actually they all need to use the same Appium session
@@ -161,13 +169,13 @@ module.exports = function (options, context, rs, logger) {
             return;
         }
         // take capabilities either from init method argument or from context parameters passed in the constructor
-        // merge capabilities in context and in init function arguments, give preference to context-passed capabilities
+        // merge capabilities in context and in init function arguments
         _this.caps = {};
-        if (caps) {
-            _.extend(_this.caps, caps);
-        }
         if (ctx.caps) {
             _.extend(_this.caps, ctx.caps);
+        }
+        if (caps) {
+            _.extend(_this.caps, caps);
         }
         // write back to the context the merged caps (used later in the reporter)
         ctx.caps = _this.caps;
@@ -179,7 +187,7 @@ module.exports = function (options, context, rs, logger) {
         };
 
         // if host parameter includes a full URL to the hub, then divide it into separate parts to pass to WDIO
-        if ((arguments.length == 2 && host.indexOf('http') == 0)
+        if ((arguments.length == 2 && host && host.indexOf('http') == 0)
             || (wdioOpts.host && wdioOpts.host.indexOf('http') == 0)) {
             var URL = require('url');
             var url = URL.parse(host || wdioOpts.host);
@@ -189,10 +197,21 @@ module.exports = function (options, context, rs, logger) {
             wdioOpts.protocol = url.protocol.substr(0, url.protocol.length - 1);    // remove ':' character
         }
         // initialize driver with either default or custom appium/selenium grid address
-        _this.driver = wdio.remote(wdioOpts);
+        _this.driver = wdio.remote(wdioOpts);      
+        // make wdio call sync 
         wdioSync.wrapCommands(_this.driver);
         try {
-            _this.driver.init();
+            var sessionId = null;
+            if (arguments.length == 4 && resume === true) {
+                var sessions = _this.driver.sessions().value;
+                if (sessions.length > 0) {
+                    sessionId = sessions[0].id;
+                    _this.driver.requestHandler.sessionID = sessions[0].id;
+                }
+            }
+            if (!sessionId) {
+                _this.driver.init();
+            }
         } catch (err) {
             // make webdriverio's generic 'selenium' message more descriptive
             if (err.type === 'RuntimeError' && err.message === "Couldn't connect to selenium server") {
@@ -238,16 +257,9 @@ module.exports = function (options, context, rs, logger) {
         var platform = this.caps && this.caps.platformName ? this.caps.platformName.toLowerCase() : null;
         
         if (this.appContext === 'NATIVE_APP' && platform === 'android') {
-            if (locator.indexOf('id=') === 0) {
-                // prepend package name if it's not specified
-                // NOTE: getCurrentPackage() seems to crash possibly due to a wdio bug. 
-                //       so we get package name from caps instead.
-                locator = locator.substr('id='.length);
-                if (locator.indexOf(':id/') === -1) {
-                    locator = _this.caps.appPackage + ':id/' + locator;
-                }
-                return 'android=new UiSelector().resourceId("' + locator + '")';
-            } else if (locator.indexOf('class=') === 0)
+            if (locator.indexOf('id=') === 0)
+                return 'android=new UiSelector().resourceId("' + locator.substr('id='.length) + '")';
+            else if (locator.indexOf('class=') === 0)
                 return 'android=new UiSelector().className("' + locator.substr('class='.length) + '")';
             else if (locator.indexOf('text=') === 0)
                 return 'android=new UiSelector().text("' + locator.substr('text='.length) + '")';
