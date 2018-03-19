@@ -96,6 +96,11 @@ module.exports = function (options, context, rs, logger) {
         return _this.driver;
     };
 
+    // allow to check within the script if the module is initialized
+    module.isInitialized = function() {
+        return _this.isInitialized;
+    }
+
     // TODO: pending deprecation
     module._isAction = function(name) {
         return ACTION_COMMANDS.includes(name);
@@ -146,7 +151,7 @@ module.exports = function (options, context, rs, logger) {
      * @for android, ios, hybrid, web
      */
     module.getCaps = function() {
-        return _this.caps;
+        return _this.caps || ctx.caps;
     };
 
     /**
@@ -162,26 +167,35 @@ module.exports = function (options, context, rs, logger) {
         // this is required when test suite with multiple test cases is executed
         // then .init() might be called in each test case, but actually they all need to use the same Appium session
         if (_this.isInitialized) {
-            if (opts.autoReopen !== false) { // true or false if explisitly set. true on null or undefined.
-                _this.driver.reload();
+            if (opts.reopenSession !== true) { // true or false if explisitly set. true on null or undefined.
+                logger.debug('reopenSession is true - disposing mob module before re-initialization.');
+                module.dispose();
+                //_this.driver.reload();
             }
             else {
-                logger.debug('init() was called for already initialized module. autoReopen=false so the call is ignored.');
+                logger.debug('mob.init() was called for already initialized module. reopenSession is false so the call is ignored.');
+                return;
             }
-            return;
+        }
+
+        // FIXME: this needs to be re-implimented!!!
+        // because when we run mixed web/mobile tests using a suite, ctx.cap will contain browserName
+        // we need to remove it in case a native app was specified.
+        if (caps && caps.appPackage && ctx.caps.browserName) {
+            delete ctx.caps.browserName;
         }
 
         // take capabilities either from init method argument or from context parameters passed in the constructor
-        // merge capabilities from context and from init function argument, give preference to context-passed capabilities
+        // merge capabilities from context and from init function arguments, give preference to context-passed capabilities
         _this.caps = {};
-
-        if (ctx.caps) {
-            _.extend(_this.caps, ctx.caps);
-        }
         if (caps) {
             _.extend(_this.caps, caps);
         }
-
+        if (ctx.caps) {
+            _.extend(_this.caps, ctx.caps);
+        }
+        // write back to the context the merged caps (used later in the reporter)
+        ctx.caps = _this.caps;
         // populate WDIO options
         var wdioOpts = {
             host: host || opts.host || DEFAULT_APPIUM_HOST,
@@ -236,6 +250,7 @@ module.exports = function (options, context, rs, logger) {
             _this.isInitialized = false;
             try {
                 _this.driver.end();
+                _this.driver = null;
             } catch (e) {
                 // ignore errors
             }
