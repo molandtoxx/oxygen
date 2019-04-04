@@ -34,10 +34,10 @@
     "grunt-eslint": "20.2.0"
   },
   "dependencies": {
+    "@applitools/eyes.webdriverio": "^2.1.0-beta.0",
     "async": "2.6.1",
     "chai": "4.2.0",
     "chrome-har": "0.10.0",
-    "ox-chrome-remote-interface": "0.27.0",
     "config": "3.0.1",
     "deasync": "0.1.14",
     "easyxml": "2.0.1",
@@ -50,6 +50,7 @@
     "lodash": "4.17.11",
     "minimist": "1.2.0",
     "moment": "2.24.0",
+    "ox-chrome-remote-interface": "0.27.0",
     "oxygen-logger": "0.3.0",
     "request": "2.88.0",
     "serialport": "7.1.4",
