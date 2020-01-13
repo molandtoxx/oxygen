@@ -58,6 +58,7 @@
     "@babel/runtime": "7.7.6",
     "@wdio/cli": "5.18.2",
     "@wdio/devtools-service": "5.16.16",
+    "@wdio/sauce-service": "^5.16.10",
     "@wdio/sync": "5.17.0",
     "async": "3.1.0",
     "chai": "4.2.0",
@@ -87,6 +88,7 @@
     "soap": "0.30.0",
     "strip-comments": "1.0.2",
     "twilio": "3.39.1",
+    "wdio-sauce-service": "^0.4.14",
     "webdriverio": "5.18.2",
     "when": "3.7.8",
     "xlsx": "0.15.4"

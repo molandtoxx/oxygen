@@ -93,7 +93,13 @@ export default class WebModule extends WebDriverModule {
      * @param {String=} caps - Desired capabilities. If not specified capabilities will be taken from suite definition.
      * @param {String=} seleniumUrl - Remote server URL (default: http://localhost:4444/wd/hub).
      */
-    init(caps, seleniumUrl) {
+    async init(caps, seleniumUrl) {
+
+        console.log('---');
+        console.log('caps', caps);
+        console.log('seleniumUrl', seleniumUrl);
+        console.log('---');
+
         if (this.isInitialized) {
             return;
         }
@@ -155,6 +161,8 @@ export default class WebModule extends WebDriverModule {
         const port = parseInt(url.port || (protocol === 'https' ? 443 : 80));
         const path = url.pathname;
 
+        console.log('url', url);
+
         // auth is needed mostly for cloud providers such as LambdaTest
         if (url.auth) {
             const auth = url.auth.split(':');
@@ -174,19 +182,30 @@ export default class WebModule extends WebDriverModule {
             logLevel: 'silent',
             runner: 'repl'
         };
+        
+        if(wdioOpts && wdioOpts.hostname && typeof wdioOpts.hostname === 'string' && wdioOpts.hostname.includes('saucelabs')){
+            wdioOpts['services'] = ['sauce'];
+            wdioOpts['sauceConnect'] = true;
+        }
+
+        console.log('wdioOpts', wdioOpts);
 
         let initError = null;
-        const _this = this;
-        wdio.remote(wdioOpts)
-            .then((driver => {
-                _this.driver = driver;
-                _this._isInitialized = true;
-            }))
-            .catch(err => {
-                initError = err;
-            });
 
-        deasync.loopWhile(() => !_this.isInitialized && !initError);
+        try {
+            const browser = await wdio.remote(wdioOpts);
+
+            console.log('browser', browser);
+
+            this.driver = browser;
+            this._isInitialized = true;
+
+        } catch(e) {
+            console.log('wdio.remote e', e);
+            initError = e;
+        }
+
+        deasync.loopWhile(() => !this.isInitialized && !initError);
 
         if (initError) {
             throw errHelper.getSeleniumInitError(initError);
@@ -194,22 +213,34 @@ export default class WebModule extends WebDriverModule {
 
         this.driver.setTimeout({ 'implicit': this.waitForTimeout });
 
+        console.log('this.options.collectBrowserLogs', this.options.collectBrowserLog);
+        console.log('this.caps.browserName', this.caps.browserName);
+
         // reset browser logs if auto collect logs option is enabled
         if (this.options.collectBrowserLogs && this.caps.browserName === 'chrome') {
             try {
                 // simply call this to clear the previous logs and start the test with the clean logs
-                this.getBrowserLogs();
+                console.log('before getBrowserLogs');
+                const result = this.getBrowserLogs();
+                console.log('getBrowserLogs', result);
             } catch (e) {
+                console.log('Cannot retrieve browser logs.', e);
                 this.logger.error('Cannot retrieve browser logs.', e);
             }
         }
+        
+        console.log('maximize browser window');
+
         // maximize browser window
         try {
             this.driver.maximizeWindow();
         } catch (err) {
+            console.log('maximizeWindow err', err);
             throw new OxError(errHelper.errorCode.UNKNOWN_ERROR, err.message, util.inspect(err));
         }
+        console.log('super.init before');
         super.init();
+        console.log('super.init after');
     }
     /**
      * @function dispose

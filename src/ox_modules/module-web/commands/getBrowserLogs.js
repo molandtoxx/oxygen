@@ -20,7 +20,18 @@
 module.exports = function() {
     var browser = this.caps.browserName;
     if (browser === 'chrome') {
-        return this.driver.getLogs('browser');
+        let logs = null;
+        console.log('this.driver.getLogs', this.driver.getLogs);
+
+        try {
+            let getLogsResult = this.driver.getLogs('browser');
+
+            console.log('getLogsResult', getLogsResult);
+        } catch(e){
+            console.log('getLogsResult e', e);
+        }
+
+        return logs;
     } else {
         console.warn(`getBrowserLogs is not supported on "${browser}"`);
         return null;
