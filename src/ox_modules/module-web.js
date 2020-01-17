@@ -173,8 +173,11 @@ export default class WebModule extends WebDriverModule {
             port: port,
             path: path,
             capabilities: this.caps,
-            logLevel: 'silent',
-            runner: 'repl'
+            logLevel: 'debug',
+            runner: 'repl',
+            sauceConnect: true,
+            services: ['sauce'],
+            region: 'us',
         };
 
         let initError = null;

@@ -29,6 +29,7 @@ export default class NetworkSubModule extends OxygenSubModule {
         }
         this._devTools = devTools;
         this._driver = this._parent.getDriver();
+        console.log('this._driver', this._driver);
         this._driver.on('Network.responseReceived', this._onNetworkResponseReceived.bind(this));
         this._driver.on('Network.requestWillBeSent', this._onNetworkRequestWillBeSent.bind(this));
         super.init();

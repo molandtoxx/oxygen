@@ -16,8 +16,8 @@ export default class DevToolsService extends OxygenService {
             return;
         }
 
-        // TODO: saucelabs integration throw error OI-667
-        return;
+        // // TODO: saucelabs integration throw error OI-667
+        // return;
 
         const networkSubmodule = new NetworkSubModule('network', module);
         module.addSubModule('network', networkSubmodule);
@@ -34,8 +34,15 @@ export default class DevToolsService extends OxygenService {
         }
         // initialize DevToolsService and hook it to the current webdriver object
         const devToolsSvc = new WDIODevToolsService();
-        devToolsSvc.beforeSession(null, module.getCapabilities());
+        console.log('module.getCapabilities()', module.getCapabilities());
+        console.log('devToolsSvc', devToolsSvc);
+
+        const driver = module.getDriver();
+        const requests = driver.execute('sauce:network');
+        console.log('requests', requests);
+
         if (devToolsSvc.isSupported) {
+            devToolsSvc.beforeSession(null, module.getCapabilities());
             // change global.browser to the current module's webdriver instance
             const orgGlobalBrowser = global.browser;
             global.browser = module.getDriver();
