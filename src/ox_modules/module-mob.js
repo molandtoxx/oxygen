@@ -117,6 +117,9 @@ export default class MobileModule extends WebDriverModule {
             appiumUrl = this.options.appiumUrl || DEFAULT_APPIUM_URL;
         }
 
+        console.log('this.options.appiumUrl', this.options.appiumUrl);
+        console.log('appiumUrl', appiumUrl);
+
         // merge capabilities from context and from init function argument, give preference to context-passed capabilities
         this.caps = {};
         if (this.ctx.caps) {
@@ -153,7 +156,7 @@ export default class MobileModule extends WebDriverModule {
         // populate WDIO options
         const url = URL.parse(appiumUrl);
         const protocol = url.protocol.replace(/:$/, '');
-        const host = url.hostname;
+        // const host = url.hostname;
         const port = parseInt(url.port || (protocol === 'https' ? 443 : 80));
         const path = url.pathname;
 
@@ -166,25 +169,33 @@ export default class MobileModule extends WebDriverModule {
             };
         }
 
+        // host
+
         var wdioOpts = {
             ...this.options.wdioOpts || {},
             protocol: protocol,
-            hostname: host,
+            hostname: 'us1.appium.testobject.com',
+            host: 'us1.appium.testobject.com',
             port: port,
             path: path,
             capabilities: this.caps,
             logLevel: 'silent',
-            runner: 'repl'
+            runner: 'repl',
+            region: 'eu'
         };
+
+        console.log('wdioOpts', wdioOpts);
 
         let initError = null;
         const _this = this;
         wdio.remote(wdioOpts)
             .then((driver => {
+                console.log('driver', driver);
                 _this.driver = driver;
                 _this._isInitialized = true;
             }))
             .catch(err => {
+                console.log('err', err);
                 initError = err;
             });
 
